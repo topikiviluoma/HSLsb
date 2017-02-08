@@ -12,16 +12,17 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 
 public class HSLController {
 
-    private String vehicleRef;
-    private String lineRef;
+
     private String json;
     private JSONArray vehicleActivityArray;
-
+    private List<String> results;
 
     @RequestMapping(value = "/line", method = RequestMethod.GET)
     public
@@ -29,24 +30,33 @@ public class HSLController {
     String findWithLineRef(@RequestParam(value = "LineRef", required = true) String name) throws IOException, JSONException {
         getJson();
         getVehicleActivityArray();
+        this.results = new ArrayList<>();
 
         for (int i = 0; i < this.vehicleActivityArray.length(); i++) {
 
             JSONObject vehicleActivity = this.vehicleActivityArray.getJSONObject(i);
+
+            StringBuilder result = new StringBuilder();
 
             if (vehicleActivity
                     .getJSONObject("MonitoredVehicleJourney")
                     .getJSONObject("LineRef")
                     .getString("value")
                     .equals(name)) {
-                this.lineRef = vehicleActivity.toString();
-                break;
-            } else {
-                this.lineRef = "Linjaa ei löydy";
+                result.append("RecordedAtTime: ");
+                result.append(vehicleActivity.getLong("RecordedAtTime"));
+                result.append(vehicleActivity.getJSONObject("MonitoredVehicleJourney").getJSONObject("LineRef"));
+                result.append(vehicleActivity.getJSONObject("MonitoredVehicleJourney").getJSONObject("VehicleLocation"));
+                results.add(result.toString());
+
+
             }
 
+        } if (this.results.isEmpty()) {
+            return "Linjaa ei löytynyt";
         }
-        return this.lineRef;
+
+        return results.toString();
     }
 
     @RequestMapping(value ="/vehicle", method = RequestMethod.GET)
@@ -55,25 +65,34 @@ public class HSLController {
     String findWithVehicleRef(@RequestParam(value = "VehicleRef", required = true) String name) throws IOException, JSONException {
         getJson();
         getVehicleActivityArray();
+        this.results = new ArrayList<>();
+
 
         for (int i = 0; i < this.vehicleActivityArray.length(); i++) {
 
             JSONObject vehicleActivity = this.vehicleActivityArray.getJSONObject(i);
+            StringBuilder result = new StringBuilder();
+
+
 
             if (vehicleActivity
                     .getJSONObject("MonitoredVehicleJourney")
                     .getJSONObject("VehicleRef")
                     .getString("value")
                     .equals(name)) {
-                this.vehicleRef = vehicleActivity.toString();
-                break;
+                result.append("RecordedAtTime: ");
+                result.append(vehicleActivity.getLong("RecordedAtTime"));
+                result.append(vehicleActivity.getJSONObject("MonitoredVehicleJourney").getJSONObject("VehicleRef"));
+                result.append(vehicleActivity.getJSONObject("MonitoredVehicleJourney").getJSONObject("VehicleLocation"));
+                this.results.add(result.toString());
 
-            } else {
-                this.vehicleRef = "Ajoneuvoa ei löydy";
             }
 
         }
-        return this.vehicleRef;
+        if (this.results.isEmpty()) {
+            return "Ajoneuvoa ei löytynyt";
+        }
+        return this.results.toString();
     }
 
     public String getJson() {
